@@ -1,0 +1,42 @@
+[package]
+authors = ["Todd Stellanova <tstellanova@users.noreply.github.com>"]
+edition = "2018"
+readme = "README.md"
+name = "test_bmp280"
+version = "0.1.0"
+
+[dependencies]
+embedded-hal = "0.2.3"
+cortex-m = "0.6.0"
+cortex-m-rt = "0.6.10"
+cortex-m-semihosting = "0.3.3"
+panic-halt = "0.2.0"
+#panic-semihosting = "0.5.3"
+cortex-m-log = { version = "0.6.1", features = ["log-integration", "itm", "semihosting"] }
+
+#shared-bus = {version = "0.1.4", features = ["cortexm"] }
+#ssd1306 = "0.2.6"
+#embedded-graphics = "0.4.9"
+
+
+bmp280-ehal = "0.0.3"
+
+
+# stm32 family specialization:
+stm32h7 = { version = "0.10.0", optional = true}
+stm32h7xx-hal = { version = "0.3.0", features = ["stm32h743", "rt"], optional=true }
+
+stm32f4 = {version = "0.10.0", features = ["stm32f401"], optional=true }
+#stm32f4xx-hal = { version =" 0.6.0", features = ["stm32f401", "rt"], optional=true}
+stm32f4xx-hal = { git = "https://github.com/stm32-rs/stm32f4xx-hal", features = ["stm32f401", "rt"], optional=true}
+
+stm32f3 = {version = "0.10.0", features = ["stm32f3x4"], optional=true}
+stm32f3xx-hal = { git = "https://github.com/stm32-rs/stm32f3xx-hal",  features = ["stm32f334", "rt"], optional=true}
+
+# to select a stm32 family, use one of the following as the default
+[features]
+default = ["stm32f3x"]
+stm32f3x = [ "stm32f3", "stm32f3xx-hal"]
+stm32f4x = [ "stm32f4", "stm32f4xx-hal"]
+stm32h7x = ["stm32h7", "stm32h7xx-hal"]
+
