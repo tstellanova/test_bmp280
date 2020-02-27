@@ -35,7 +35,7 @@ stm32f3xx-hal = { git = "https://github.com/stm32-rs/stm32f3xx-hal",  features =
 
 # to select a stm32 family, use one of the following as the default
 [features]
-default = ["stm32f3x"]
+default = ["stm32f4x"]
 stm32f3x = [ "stm32f3", "stm32f3xx-hal"]
 stm32f4x = [ "stm32f4", "stm32f4xx-hal"]
 stm32h7x = ["stm32h7", "stm32h7xx-hal"]
