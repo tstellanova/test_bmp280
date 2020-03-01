@@ -15,6 +15,7 @@ use cortex_m_log::{println};
 
 use cortex_m_log::{d_println};
 
+
 // use cortex_m::asm;
 use cortex_m_rt::{entry};//, ExceptionFrame};
 
@@ -35,6 +36,7 @@ use embedded_hal::digital::v2::ToggleableOutputPin;
 use embedded_hal::blocking::delay::DelayMs;
 
 use bmp280_ehal::{BMP280};
+// use core::borrow::BorrowMut;
 
 
 // #[macro_use]
@@ -44,7 +46,7 @@ use bmp280_ehal::{BMP280};
 #[cfg(debug_assertions)]
 // type DebugLog = cortex_m_log::printer::dummy::Dummy;
 type DebugLog = cortex_m_log::printer::semihosting::Semihosting<cortex_m_log::modes::InterruptFree, cortex_m_semihosting::hio::HStdout>;
-
+//type DebugLog = cortex_m_log::printer::itm::Itm<cortex_m_log::modes::InterruptFree>
 
 
 #[cfg(feature = "stm32f3x")]
@@ -80,6 +82,10 @@ pub type ImuI2cPortType = p_hal::i2c::I2c<I2C1,
 //     //panic!("HardFault: {:?}", ef);
 // }
 
+
+
+
+
 /// Used in debug builds to provide a logging outlet
 #[cfg(debug_assertions)]
 fn get_debug_log() -> DebugLog {
@@ -111,6 +117,7 @@ fn setup_peripherals() -> (
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
     // let gpioc = dp.GPIOC.split();
 
+    //stm32f334discovery
     let mut user_led1 = gpiob.pb6.into_push_pull_output(&mut gpiob.moder, &mut gpiob.otyper);
     user_led1.set_high().unwrap();
 
@@ -219,19 +226,28 @@ fn setup_peripherals() ->  (
 
 #[entry]
 fn main() -> ! {
+
     let (i2c_port, mut user_led1, mut delay_source) = setup_peripherals();
+
+    let mut log = get_debug_log();
+
 
     let mut sensor = BMP280::new(i2c_port).unwrap();
     sensor.reset();
     let _ = user_led1.set_low();
-    d_println!(get_debug_log(), "ready!");
+    d_println!(log, "ready!");
     delay_source.delay_ms(1u8);
 
+    let mut read_count = 0u32;
     loop {
         let _pres = sensor.pressure_one_shot();
-        d_println!(get_debug_log(), "{:.2}",_pres);
+        read_count += 1;
+        if read_count % 10 == 0 {
+            d_println!(log, "{} {:.2}",read_count, _pres);
+            //d_println!(log, "{} ",read_count);
+        }
         let _ = user_led1.toggle();
-        delay_source.delay_ms(25u8);
+        delay_source.delay_ms(1u8);
     }
 
 }

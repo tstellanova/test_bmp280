@@ -12,7 +12,7 @@ fn main() {
     let memfile_bytes = include_bytes!("stm32f401_memory.x");
 
     #[cfg(feature = "stm32f3x")]
-    let memfile_bytes = include_bytes!("stm32f334_memory.x");
+    let memfile_bytes = include_bytes!("stm32f303_memory.x");
 
         // Put the linker script somewhere the linker can find it
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
