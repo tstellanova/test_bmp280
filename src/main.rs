@@ -34,13 +34,11 @@ use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::digital::v2::ToggleableOutputPin;
 use embedded_hal::blocking::delay::DelayMs;
 
-use bmp280_ehal::BMP280;
-
-// use cortex_m::asm::bkpt;
+use bmp280_ehal::{BMP280};
 
 
-#[macro_use]
-extern crate cortex_m_rt;
+// #[macro_use]
+// extern crate cortex_m_rt;
 
 
 #[cfg(debug_assertions)]
@@ -91,7 +89,11 @@ fn get_debug_log() -> DebugLog {
 
 
 #[cfg(feature = "stm32f3x")]
-fn setup_peripherals() -> (ImuI2cPortType, impl OutputPin + ToggleableOutputPin, impl  DelayMs<u8>) {
+fn setup_peripherals() -> (
+    ImuI2cPortType,
+    impl OutputPin + ToggleableOutputPin,
+    impl  DelayMs<u8>,
+) {
     let dp = stm32::Peripherals::take().unwrap();
     let cp = cortex_m::Peripherals::take().unwrap();
 
@@ -131,7 +133,11 @@ fn setup_peripherals() -> (ImuI2cPortType, impl OutputPin + ToggleableOutputPin,
 
 
 #[cfg(feature = "stm32f4x")]
-fn setup_peripherals() ->  (ImuI2cPortType, impl OutputPin + ToggleableOutputPin, impl  DelayMs<u8>) {
+fn setup_peripherals() ->  (
+    ImuI2cPortType,
+    impl OutputPin + ToggleableOutputPin,
+    impl  DelayMs<u8>,
+    ) {
 
     let dp = stm32::Peripherals::take().unwrap();
     let cp = cortex_m::Peripherals::take().unwrap();
@@ -153,41 +159,81 @@ fn setup_peripherals() ->  (ImuI2cPortType, impl OutputPin + ToggleableOutputPin
     // setup i2c1
     // NOTE: stm32f401CxUx board lacks external pull-ups on i2c pins
     // NOTE: eg f407 discovery board already has external pull-ups
+    // NOTE: bmp280 board may have its own pull-ups: check carefully
     let scl = gpiob.pb8
         .into_alternate_af4()
-        .internal_pull_up(true)
+        //.internal_pull_up(true)
         .set_open_drain();
 
     let sda = gpiob.pb9
         .into_alternate_af4()
-        .internal_pull_up(true)
+        //.internal_pull_up(true)
         .set_open_drain();
     let i2c_port = p_hal::i2c::I2c::i2c1(dp.I2C1, (scl, sda), 400.khz(), clocks);
 
     (i2c_port, user_led1, delay_source)
 }
 
+#[cfg(feature = "stm32h7x")]
+fn setup_peripherals() ->  (
+    ImuI2cPortType,
+    impl OutputPin + ToggleableOutputPin,
+    impl  DelayMs<u8>,
+) {
+    let dp = stm32::Peripherals::take().unwrap();
+    let cp = cortex_m::Peripherals::take().unwrap();
 
+
+    // Set up the system clock
+    let rcc = dp.RCC.constrain();
+
+    let pwr = dp.PWR.constrain();
+    let vos = pwr.freeze();
+
+    //use the existing sysclk
+    let mut ccdr = rcc.freeze(vos, &dp.SYSCFG);
+    let clocks = ccdr.clocks;
+
+    let delay_source =  p_hal::delay::Delay::new(cp.SYST, clocks);
+
+    let gpiob = dp.GPIOB.split(&mut ccdr.ahb4);
+
+    let user_led1 = gpiob.pb0.into_push_pull_output(); //h743 discovery
+
+
+    // setup i2c1
+    // NOTE:  f407 discovery board already has external pull-ups
+    let scl = gpiob.pb8
+        .into_alternate_af4()
+        .set_open_drain();
+
+    let sda = gpiob.pb9
+        .into_alternate_af4()
+        .set_open_drain();
+    let i2c_port = p_hal::i2c::I2c::i2c1(dp.I2C1, (scl, sda), 400.khz(), &ccdr);
+
+
+    (i2c_port, user_led1, delay_source)
+}
 
 
 #[entry]
 fn main() -> ! {
     let (i2c_port, mut user_led1, mut delay_source) = setup_peripherals();
-    // create sensor with default configuration:
+
     let mut sensor = BMP280::new(i2c_port).unwrap();
     sensor.reset();
-
-    //set initial states of user LEDs
     let _ = user_led1.set_low();
-
+    d_println!(get_debug_log(), "ready!");
     delay_source.delay_ms(1u8);
 
     loop {
-        let pres = sensor.pressure_one_shot();
-        d_println!(get_debug_log(), "{:?}", pres);
+        let _pres = sensor.pressure_one_shot();
+        d_println!(get_debug_log(), "{:.2}",_pres);
         let _ = user_led1.toggle();
-        delay_source.delay_ms(250u8);
+        delay_source.delay_ms(25u8);
     }
+
 }
 
 

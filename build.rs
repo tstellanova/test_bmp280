@@ -18,11 +18,8 @@ fn main() {
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
     File::create(out.join("memory.x"))
         .unwrap()
-        .write_all(memfile_bytes) //include_bytes!("memory.x"))
+        .write_all(memfile_bytes)
         .unwrap();
     println!("cargo:rustc-link-search={}", out.display());
 
-    // // Only re-run the build script when memory.x is changed,
-    // // instead of when any part of the source code changes.
-    // println!("cargo:rerun-if-changed=memory.x");
 }
